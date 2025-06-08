@@ -1,5 +1,9 @@
 {
-    "firstName": "Ankit",
-    "lastName": "Jain",
-    "age": 34.0
+    "id": "12345",
+    "name": "Ankit",
+    "email": "abc@test.com",
+    "age": 34.0,
+    "address": "123 Main St, City, Country",
+    "phone": "+1234567890",
+    "dateOfBirth": "1989-01-01"
 }
