@@ -113,6 +113,7 @@ run:
 
 - You can now avoid manually typing long commands and you can chain tasks together (Eg. clean -> build -> deploy) <br>
 Example, now you can just run below simple commands:
+
 | Command             | What it does                              |
 | ------------------- | ----------------------------------------- |
 | `make build`        | Cleans and builds with `sam build`        |
