@@ -43,3 +43,43 @@ func InsertUser(client *mongo.Client, user User) (interface{}, error) {
 	}
 	return insertedResponse.InsertedID, nil
 }
+
+// DeleteUser deletes a user document from the MongoDB collection based on the user ID.
+func DeleteUser(client *mongo.Client, userId string) (interface{}, error) {
+	database := client.Database("tmf-productorder").Collection("productorder")
+	filter := map[string]interface{}{"id": userId}
+	deletedResponse, err := database.DeleteOne(context.TODO(), filter)
+	if err != nil {
+		log.Println("Error deleting user from MongoDB")
+		return 0, err
+	}
+	return deletedResponse.DeletedCount, nil
+}
+
+// GetUser retrieves a user document from the MongoDB collection based on the user ID.
+func GetUser(client *mongo.Client, userId string) (User, error) {
+	database := client.Database("tmf-productorder").Collection("productorder")
+	filter := map[string]interface{}{"id": userId}
+	var user User
+	err := database.FindOne(context.TODO(), filter).Decode(&user)
+	if err != nil {
+		log.Println("Error retrieving user from MongoDB")
+		return User{}, err
+	}
+	return user, nil
+}
+
+// UpdateUser updates an existing user document in the MongoDB collection based on the user ID.
+func UpdateUser(client *mongo.Client, user User) (interface{}, error) {
+	database := client.Database("tmf-productorder").Collection("productorder")
+	filter := map[string]interface{}{"id": user.Id}
+	update := map[string]interface{}{
+		"$set": user,
+	}
+	result, err := database.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		log.Println("Error updating user in MongoDB")
+		return 0, err
+	}
+	return result.ModifiedCount, nil
+}
