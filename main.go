@@ -6,7 +6,10 @@ import (
 	"log"
 
 	"github.com/aws/aws-lambda-go/lambda"
+	"go.mongodb.org/mongo-driver/mongo"
 )
+
+var client *mongo.Client
 
 func init() {
 	log.Println("Initializing Lambda function...")
@@ -16,10 +19,11 @@ func main() {
 	lambda.Start(handleRequest)
 }
 
-// This is a simple AWS Lambda function written in Go that returns a user object.
-// The function is triggered by an event and returns a hardcoded user response.
-func handleRequest(ctx context.Context, event map[string]interface{}) (src.User, error) {
+// This function handles the incoming Lambda event, connects to MongoDB, and inserts a user document.
+// It returns the inserted user document or an error if the operation fails.
+func handleRequest(ctx context.Context, event map[string]interface{}) (interface{}, error) {
 	log.Println("Hello from AWS Lambda!")
+	client = src.ConnectToMongoDB()
 
 	response := src.User{
 		Id:          event["id"].(string),
@@ -31,5 +35,13 @@ func handleRequest(ctx context.Context, event map[string]interface{}) (src.User,
 		DateOfBirth: event["dateOfBirth"].(string),
 	}
 
-	return response, nil
+	insertedResponse, err := src.InsertUser(client, response)
+	if err != nil {
+		log.Println("Error inserting user into MongoDB:", err)
+		return nil, err
+	}
+
+	log.Println("User inserted successfully:", insertedResponse)
+
+	return insertedResponse, nil
 }

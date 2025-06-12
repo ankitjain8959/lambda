@@ -119,3 +119,13 @@ Example, now you can just run below simple commands:
 | `make build`        | Cleans and builds with `sam build`        |
 | `make clean`        | Deletes `.aws-sam/build`                  |
 | `make run`          | Runs the Lambda locally with `event.json` |
+
+
+
+# Important Notes
+When you use tools like the AWS SAM CLI (sam local invoke) or AWS Lambda Extensions for local testing, they automatically run your Lambda function inside a Docker container to simulate the Lambda environment.
+
+This means:
+- You need Docker installed and running on your machine.
+- Your Lambda code is running inside a Docker container, even if you didn't build the image yourself.
+- You will need to create `docker network` & run containers on that network, if you want to connect to other services (like a local database) from your Lambda function.

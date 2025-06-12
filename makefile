@@ -11,4 +11,5 @@ clean:
 	PowerShell -Command "Remove-Item -Recurse -Force .aws-sam\\build"
 
 run:
-	sam local invoke $(APP_NAME) --event $(LAMBDA_PAYLOAD)
+# sam local invoke $(APP_NAME) --event $(LAMBDA_PAYLOAD)
+	sam local invoke --docker-network lambda-mongo-net $(APP_NAME) --event $(LAMBDA_PAYLOAD)
