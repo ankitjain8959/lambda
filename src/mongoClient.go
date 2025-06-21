@@ -47,7 +47,7 @@ func InsertUser(client *mongo.Client, user User) (interface{}, error) {
 // DeleteUser deletes a user document from the MongoDB collection based on the user ID.
 func DeleteUser(client *mongo.Client, userId string) (interface{}, error) {
 	database := client.Database("tmf-productorder").Collection("productorder")
-	filter := map[string]interface{}{"id": userId}
+	filter := map[string]interface{}{"_id": userId}
 	deletedResponse, err := database.DeleteOne(context.TODO(), filter)
 	if err != nil {
 		log.Println("Error deleting user from MongoDB")
@@ -59,7 +59,7 @@ func DeleteUser(client *mongo.Client, userId string) (interface{}, error) {
 // GetUser retrieves a user document from the MongoDB collection based on the user ID.
 func GetUser(client *mongo.Client, userId string) (User, error) {
 	database := client.Database("tmf-productorder").Collection("productorder")
-	filter := map[string]interface{}{"id": userId}
+	filter := map[string]interface{}{"_id": userId}
 	var user User
 	err := database.FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
@@ -72,7 +72,7 @@ func GetUser(client *mongo.Client, userId string) (User, error) {
 // UpdateUser updates an existing user document in the MongoDB collection based on the user ID.
 func UpdateUser(client *mongo.Client, user User) (interface{}, error) {
 	database := client.Database("tmf-productorder").Collection("productorder")
-	filter := map[string]interface{}{"id": user.Id}
+	filter := map[string]interface{}{"_id": user.Id}
 	update := map[string]interface{}{
 		"$set": user,
 	}

@@ -33,11 +33,12 @@ func handleRequest(ctx context.Context, event map[string]interface{}) (interface
 		Address:     event["address"].(string),
 		Phone:       event["phone"].(string),
 		DateOfBirth: event["dateOfBirth"].(string),
+		AtType:      event["@type"].(string),
 	}
 
 	log.Println("Received event:", receivedEvent)
-	return insertUser(receivedEvent)
-	// return getUser(receivedEvent.Id)
+	insertUser(receivedEvent)
+	return getUser(receivedEvent.Id)
 	// return updateUser(receivedEvent)
 	// return deleteUser(receivedEvent.Id)
 }

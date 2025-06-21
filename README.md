@@ -1,131 +1,72 @@
-# AWS Lambda
-AWS Lambda is a `serverless compute service` offered by Amazon Web Services (AWS). It lets you run code without provisioning or managing servers. <br>
-You just write your function code, `upload it as a zip file` or `container image`, and AWS handles the rest. Lambda automatically allocates compute execution power and runs your code based on the incoming request or event, for any scale of traffic.
+# Lambda using GO
+This project demonstrates how to build an AWS Lambda function in Go that performs CRUD operations on a MongoDB database. The Lambda function is designed to run locally (using AWS SAM CLI or similar tools) and connect to a MongoDB instance running in a Docker container.
 
-## Lambda functions and function handlers
-> Lambda function
-- Lambda function is a piece of code (+ configuration), that does one specific task. <br>
-- It runs only when triggered by some event (like, a user clicking a button on a website or a file being uploaded to S3 bucket etc.)
+## Features
+- **Insert User:** Adds a new user document to MongoDB.
+- **Get User:** Retrieves a user document by ID.
+- **Update User:** Updates an existing user document.
+- **Delete User:** Deletes a user document by ID.
 
-> Function handler
-- The function handler is the entry point of your lambda function - it’s the method AWS calls when your Lambda is triggered.
--  It takes the event and context -> does the work -> and returns a response. Your function runs until the handler returns a response, exits, or times out.
+## Project Structure
+- `main.go`: Entry point for the Lambda function. Handles incoming events and routes them to the appropriate MongoDB operation.
+- `src/mongoClient.go`: Contains MongoDB connection logic and CRUD helper functions.
+- `src/userType.go`: Defines the `User` struct.
+- `go.mod`: Go module file that specifies dependencies.
+- `go.sum`: Go module checksum file.
 
-| Parameter   | Description                                                                                                                        |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **event**   | The **input data** passed to your Lambda. This can be from API Gateway, S3, SNS, DynamoDB, Step Functions, etc. It's usually JSON. |
-| **context** | Metadata (eg. request Id, timeout, memory etc) about the invocation, function, and environment. Provided by AWS to your function at runtime. |
+## How It Works
+1. **MongoDB Connection:**  
+   The Lambda function connects to a MongoDB instance using the Go MongoDB driver. The connection URI is set to `mongodb://my-mongo:27017`, which assumes MongoDB is running in a Docker container named `my-mongo` on a user-defined Docker network.
 
-`event`
-This is the trigger input, and varies based on what invoked the Lambda:
+2. **Event Handling:**  
+   The Lambda handler (`handleRequest`) receives an event (as a map), parses it into a `User` struct, and performs the requested operation (insert, get, update, or delete).
 
-| Invocation Source | Sample `event`                          |
-| ----------------- | --------------------------------------- |
-| API Gateway       | HTTP method, headers, body, etc.        |
-| S3 Event          | Bucket name, object key, event type     |
-| DynamoDB Stream   | New/old item image, change type         |
-| Step Functions    | Whatever input you passed into the step |
+3. **CRUD Operations:**  
+   - **Insert:** Adds a new user document.
+   - **Get:** Retrieves a user by ID.
+   - **Update:** Updates user details.
+   - **Delete:** Removes a user by ID.
 
-`context`
-This gives information about the Lambda execution environment. Common context fields:
-| Property                         | Description                       |
-| -------------------------------- | --------------------------------- |
-| `function_name`                  | Name of the Lambda function       |
-| `memory_limit_in_mb`             | Memory allocated                  |
-| `aws_request_id`                 | Unique ID per invocation          |
-| `get_remaining_time_in_millis()` | Time left before Lambda times out |
-| `log_stream_name`                | CloudWatch log stream             |
+## Running Locally
+### 1. Start MongoDB in Docker
 
-
-## How Lambda works - workflow?
-- `Trigger:` A Lambda function is invoked by an event (like an HTTP request via API Gateway, a file upload in S3, or a scheduled cron job via EventBridge).
-- `Execution:` AWS provisions a container, loads the runtime (e.g., Python, Node.js), and runs your function code.
-- `Scale:` AWS automatically scales the number of function instances based on demand.
-- `Shutdown:` The container is frozen (or terminated) after the execution finishes (for cost savings).
-
-## How to test your Lambda function locally (using AWS SAM CLI & Docker)
-1. Create a SAM Template (It defines your Lambda function and its configuration in a way that AWS SAM CLI understands)
-Create a file named `template.yaml` in your project directory
-```
-AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Resources:
-  MyFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: main
-      Runtime: go1.x
-      CodeUri: .
-      Events:
-        ApiEvent:
-          Type: Api
-          Properties:
-            Path: /test
-            Method: post
-```
-2. Build the Lambda
-```
-sam build
-```
-This command will create a `.aws-sam` directory with the built Lambda function code and dependencies.
-
-3. Create a Test Event (event.json)
-```
-{
-  "firstName": "John",
-  "lastName": "Doe",
-  "age": 30
-}
+```sh
+docker network create lambda-mongo-net
+docker run --name my-mongo --network lambda-mongo-net -d -p 27017:27017 mongo
 ```
 
-4. Invoke the Lambda Locally
-```
-sam local invoke MyFunction -e event.json
-```
+### 2. Run Lambda Locally
 
-5. [Optional] Start a Local API and test with HTTP requests
-```
-sam local start-api
-```
-Then send a POST request to http://127.0.0.1:3000/test with your JSON body.
+If using AWS SAM CLI:
 
-### Automate building, testing, cleaning, deploying using `make` tool
-`make` tool can be used to automate the building, testing, cleaning, deploying tasks.
-
-- Install `make` tool
-- Create a `Makefile` (configuration file used by `make` tool) in your project directory with the following content:
-```
-APP_NAME = MyFunction
-
-//.PHONY is a special built-in command (or target) that tells `make` that This target name is not a filename — always run the associated commands, even if a file or directory with the same name exists. Without .PHONY, make checks whether a file or directory with the same name as your target exists, and if it does, it skips running that target. <br>
-.PHONY: build clean local-invoke
-
-build:
-	@echo "Building Lambda..."
-	sam build
-
-clean:
-	PowerShell -Command "Remove-Item -Recurse -Force .aws-sam\\build"
-
-run:
-	sam local invoke $(APP_NAME) --event event.json
+```sh
+sam local invoke --docker-network lambda-mongo-net ...
 ```
 
-- You can now avoid manually typing long commands and you can chain tasks together (Eg. clean -> build -> deploy) <br>
-Example, now you can just run below simple commands:
+### 3. MongoDB URI
 
-| Command             | What it does                              |
-| ------------------- | ----------------------------------------- |
-| `make build`        | Cleans and builds with `sam build`        |
-| `make clean`        | Deletes `.aws-sam/build`                  |
-| `make run`          | Runs the Lambda locally with `event.json` |
+The connection string in `src/mongoClient.go` should be:
 
+```go
+uri := "mongodb://my-mongo:27017"
+```
 
+## Environment Assumptions
 
-# Important Notes
-When you use tools like the AWS SAM CLI (sam local invoke) or AWS Lambda Extensions for local testing, they automatically run your Lambda function inside a Docker container to simulate the Lambda environment.
+- Both Lambda and MongoDB containers are on the same Docker network (`lambda-mongo-net`).
+- The MongoDB database and collection (`tmf-productorder.productorder`) are used for storing user documents.
 
-This means:
-- You need Docker installed and running on your machine.
-- Your Lambda code is running inside a Docker container, even if you didn't build the image yourself.
-- You will need to create `docker network` & run containers on that network, if you want to connect to other services (like a local database) from your Lambda function.
+## Customization
+
+- Modify the `User` struct and CRUD logic in `src/mongoClient.go` as needed for your application.
+- Adjust the Lambda handler in `main.go` to support additional event types or business logic.
+
+## Troubleshooting
+
+- Ensure both containers are on the same Docker network.
+- Use the container name (`my-mongo`) as the MongoDB host in your URI.
+- Check Docker logs for connectivity issues.
+
+---
+
+**This project is a template for integrating AWS Lambda (Go) with MongoDB in a local Dockerized development environment.**
